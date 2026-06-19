@@ -1,0 +1,98 @@
+[
+{
+  "directory": "/Users/tipok/code/practica/build",
+  "command": "/usr/bin/clang++  -I/Users/tipok/code/practica/src -I/opt/homebrew/Cellar/libzip/1.11.4_1/include -I/opt/homebrew/Cellar/openssl@3/3.6.2/include -O3 -DNDEBUG -march=native -mtune=native -std=c++20 -arch arm64 -o CMakeFiles/zip_bruteforce_core.dir/src/generator/charset.cpp.o -c /Users/tipok/code/practica/src/generator/charset.cpp",
+  "file": "/Users/tipok/code/practica/src/generator/charset.cpp",
+  "output": "CMakeFiles/zip_bruteforce_core.dir/src/generator/charset.cpp.o"
+},
+{
+  "directory": "/Users/tipok/code/practica/build",
+  "command": "/usr/bin/clang++  -I/Users/tipok/code/practica/src -I/opt/homebrew/Cellar/libzip/1.11.4_1/include -I/opt/homebrew/Cellar/openssl@3/3.6.2/include -O3 -DNDEBUG -march=native -mtune=native -std=c++20 -arch arm64 -o CMakeFiles/zip_bruteforce_core.dir/src/generator/password_generator.cpp.o -c /Users/tipok/code/practica/src/generator/password_generator.cpp",
+  "file": "/Users/tipok/code/practica/src/generator/password_generator.cpp",
+  "output": "CMakeFiles/zip_bruteforce_core.dir/src/generator/password_generator.cpp.o"
+},
+{
+  "directory": "/Users/tipok/code/practica/build",
+  "command": "/usr/bin/clang++  -I/Users/tipok/code/practica/src -I/opt/homebrew/Cellar/libzip/1.11.4_1/include -I/opt/homebrew/Cellar/openssl@3/3.6.2/include -O3 -DNDEBUG -march=native -mtune=native -std=c++20 -arch arm64 -o CMakeFiles/zip_bruteforce_core.dir/src/archive/archive_manager.cpp.o -c /Users/tipok/code/practica/src/archive/archive_manager.cpp",
+  "file": "/Users/tipok/code/practica/src/archive/archive_manager.cpp",
+  "output": "CMakeFiles/zip_bruteforce_core.dir/src/archive/archive_manager.cpp.o"
+},
+{
+  "directory": "/Users/tipok/code/practica/build",
+  "command": "/usr/bin/clang++  -I/Users/tipok/code/practica/src -I/opt/homebrew/Cellar/libzip/1.11.4_1/include -I/opt/homebrew/Cellar/openssl@3/3.6.2/include -O3 -DNDEBUG -march=native -mtune=native -std=c++20 -arch arm64 -o CMakeFiles/zip_bruteforce_core.dir/src/checker/password_checker.cpp.o -c /Users/tipok/code/practica/src/checker/password_checker.cpp",
+  "file": "/Users/tipok/code/practica/src/checker/password_checker.cpp",
+  "output": "CMakeFiles/zip_bruteforce_core.dir/src/checker/password_checker.cpp.o"
+},
+{
+  "directory": "/Users/tipok/code/practica/build",
+  "command": "/usr/bin/clang++  -I/Users/tipok/code/practica/src -I/opt/homebrew/Cellar/libzip/1.11.4_1/include -I/opt/homebrew/Cellar/openssl@3/3.6.2/include -O3 -DNDEBUG -march=native -mtune=native -std=c++20 -arch arm64 -o CMakeFiles/zip_bruteforce_core.dir/src/engine/brute_force_engine.cpp.o -c /Users/tipok/code/practica/src/engine/brute_force_engine.cpp",
+  "file": "/Users/tipok/code/practica/src/engine/brute_force_engine.cpp",
+  "output": "CMakeFiles/zip_bruteforce_core.dir/src/engine/brute_force_engine.cpp.o"
+},
+{
+  "directory": "/Users/tipok/code/practica/build",
+  "command": "/usr/bin/clang++  -I/Users/tipok/code/practica/src -I/opt/homebrew/Cellar/libzip/1.11.4_1/include -I/opt/homebrew/Cellar/openssl@3/3.6.2/include -O3 -DNDEBUG -march=native -mtune=native -std=c++20 -arch arm64 -o CMakeFiles/zip_bruteforce_core.dir/src/stats/stats_collector.cpp.o -c /Users/tipok/code/practica/src/stats/stats_collector.cpp",
+  "file": "/Users/tipok/code/practica/src/stats/stats_collector.cpp",
+  "output": "CMakeFiles/zip_bruteforce_core.dir/src/stats/stats_collector.cpp.o"
+},
+{
+  "directory": "/Users/tipok/code/practica/build",
+  "command": "/usr/bin/clang++  -I/Users/tipok/code/practica/src -I/opt/homebrew/Cellar/libzip/1.11.4_1/include -I/opt/homebrew/Cellar/openssl@3/3.6.2/include -O3 -DNDEBUG -march=native -mtune=native -std=c++20 -arch arm64 -o CMakeFiles/zip_bruteforce_core.dir/src/storage/results_storage.cpp.o -c /Users/tipok/code/practica/src/storage/results_storage.cpp",
+  "file": "/Users/tipok/code/practica/src/storage/results_storage.cpp",
+  "output": "CMakeFiles/zip_bruteforce_core.dir/src/storage/results_storage.cpp.o"
+},
+{
+  "directory": "/Users/tipok/code/practica/build",
+  "command": "/usr/bin/clang++  -I/Users/tipok/code/practica/src -I/opt/homebrew/Cellar/libzip/1.11.4_1/include -I/opt/homebrew/Cellar/openssl@3/3.6.2/include -O3 -DNDEBUG -march=native -mtune=native -std=c++20 -arch arm64 -o CMakeFiles/zip_bruteforce_core.dir/src/app/experiment_runner.cpp.o -c /Users/tipok/code/practica/src/app/experiment_runner.cpp",
+  "file": "/Users/tipok/code/practica/src/app/experiment_runner.cpp",
+  "output": "CMakeFiles/zip_bruteforce_core.dir/src/app/experiment_runner.cpp.o"
+},
+{
+  "directory": "/Users/tipok/code/practica/build",
+  "command": "/usr/bin/clang++  -I/Users/tipok/code/practica/src -I/opt/homebrew/Cellar/libzip/1.11.4_1/include -I/opt/homebrew/Cellar/openssl@3/3.6.2/include -O3 -DNDEBUG -march=native -mtune=native -std=c++20 -arch arm64 -o CMakeFiles/zip_bruteforce_core.dir/src/app/cli_parser.cpp.o -c /Users/tipok/code/practica/src/app/cli_parser.cpp",
+  "file": "/Users/tipok/code/practica/src/app/cli_parser.cpp",
+  "output": "CMakeFiles/zip_bruteforce_core.dir/src/app/cli_parser.cpp.o"
+},
+{
+  "directory": "/Users/tipok/code/practica/build",
+  "command": "/usr/bin/clang++  -I/Users/tipok/code/practica/src -I/opt/homebrew/Cellar/libzip/1.11.4_1/include -I/opt/homebrew/Cellar/openssl@3/3.6.2/include -O3 -DNDEBUG -march=native -mtune=native -std=c++20 -arch arm64 -o CMakeFiles/zipbrute.dir/src/main.cpp.o -c /Users/tipok/code/practica/src/main.cpp",
+  "file": "/Users/tipok/code/practica/src/main.cpp",
+  "output": "CMakeFiles/zipbrute.dir/src/main.cpp.o"
+},
+{
+  "directory": "/Users/tipok/code/practica/build/test",
+  "command": "/usr/bin/clang++  -I/Users/tipok/code/practica/src -I/opt/homebrew/Cellar/libzip/1.11.4_1/include -I/opt/homebrew/Cellar/openssl@3/3.6.2/include -isystem /opt/homebrew/include -O3 -DNDEBUG -march=native -mtune=native -std=c++20 -arch arm64 -o CMakeFiles/zip_bruteforce_tests.dir/test_charset.cpp.o -c /Users/tipok/code/practica/test/test_charset.cpp",
+  "file": "/Users/tipok/code/practica/test/test_charset.cpp",
+  "output": "test/CMakeFiles/zip_bruteforce_tests.dir/test_charset.cpp.o"
+},
+{
+  "directory": "/Users/tipok/code/practica/build/test",
+  "command": "/usr/bin/clang++  -I/Users/tipok/code/practica/src -I/opt/homebrew/Cellar/libzip/1.11.4_1/include -I/opt/homebrew/Cellar/openssl@3/3.6.2/include -isystem /opt/homebrew/include -O3 -DNDEBUG -march=native -mtune=native -std=c++20 -arch arm64 -o CMakeFiles/zip_bruteforce_tests.dir/test_password_generator.cpp.o -c /Users/tipok/code/practica/test/test_password_generator.cpp",
+  "file": "/Users/tipok/code/practica/test/test_password_generator.cpp",
+  "output": "test/CMakeFiles/zip_bruteforce_tests.dir/test_password_generator.cpp.o"
+},
+{
+  "directory": "/Users/tipok/code/practica/build/test",
+  "command": "/usr/bin/clang++  -I/Users/tipok/code/practica/src -I/opt/homebrew/Cellar/libzip/1.11.4_1/include -I/opt/homebrew/Cellar/openssl@3/3.6.2/include -isystem /opt/homebrew/include -O3 -DNDEBUG -march=native -mtune=native -std=c++20 -arch arm64 -o CMakeFiles/zip_bruteforce_tests.dir/test_archive_manager.cpp.o -c /Users/tipok/code/practica/test/test_archive_manager.cpp",
+  "file": "/Users/tipok/code/practica/test/test_archive_manager.cpp",
+  "output": "test/CMakeFiles/zip_bruteforce_tests.dir/test_archive_manager.cpp.o"
+},
+{
+  "directory": "/Users/tipok/code/practica/build/test",
+  "command": "/usr/bin/clang++  -I/Users/tipok/code/practica/src -I/opt/homebrew/Cellar/libzip/1.11.4_1/include -I/opt/homebrew/Cellar/openssl@3/3.6.2/include -isystem /opt/homebrew/include -O3 -DNDEBUG -march=native -mtune=native -std=c++20 -arch arm64 -o CMakeFiles/zip_bruteforce_tests.dir/test_password_checker.cpp.o -c /Users/tipok/code/practica/test/test_password_checker.cpp",
+  "file": "/Users/tipok/code/practica/test/test_password_checker.cpp",
+  "output": "test/CMakeFiles/zip_bruteforce_tests.dir/test_password_checker.cpp.o"
+},
+{
+  "directory": "/Users/tipok/code/practica/build/test",
+  "command": "/usr/bin/clang++  -I/Users/tipok/code/practica/src -I/opt/homebrew/Cellar/libzip/1.11.4_1/include -I/opt/homebrew/Cellar/openssl@3/3.6.2/include -isystem /opt/homebrew/include -O3 -DNDEBUG -march=native -mtune=native -std=c++20 -arch arm64 -o CMakeFiles/zip_bruteforce_tests.dir/test_brute_force_engine.cpp.o -c /Users/tipok/code/practica/test/test_brute_force_engine.cpp",
+  "file": "/Users/tipok/code/practica/test/test_brute_force_engine.cpp",
+  "output": "test/CMakeFiles/zip_bruteforce_tests.dir/test_brute_force_engine.cpp.o"
+},
+{
+  "directory": "/Users/tipok/code/practica/build/test",
+  "command": "/usr/bin/clang++  -I/Users/tipok/code/practica/src -I/opt/homebrew/Cellar/libzip/1.11.4_1/include -I/opt/homebrew/Cellar/openssl@3/3.6.2/include -isystem /opt/homebrew/include -O3 -DNDEBUG -march=native -mtune=native -std=c++20 -arch arm64 -o CMakeFiles/zip_bruteforce_tests.dir/test_results_storage.cpp.o -c /Users/tipok/code/practica/test/test_results_storage.cpp",
+  "file": "/Users/tipok/code/practica/test/test_results_storage.cpp",
+  "output": "test/CMakeFiles/zip_bruteforce_tests.dir/test_results_storage.cpp.o"
+}
+]

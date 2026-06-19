@@ -1,0 +1,5 @@
+if(EXISTS "/Users/tipok/code/practica/build/test/zip_bruteforce_tests[1]_tests.cmake")
+  include("/Users/tipok/code/practica/build/test/zip_bruteforce_tests[1]_tests.cmake")
+else()
+  add_test(zip_bruteforce_tests_NOT_BUILT zip_bruteforce_tests_NOT_BUILT)
+endif()

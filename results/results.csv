@@ -1,0 +1,13 @@
+id,timestamp,archive_name,archive_size_bytes,protection_type,charset_name,charset_size,password_length,total_space_size,num_threads,total_checks,total_time_ms,checks_per_second,cpu_load_percent,memory_resident_bytes,memory_virtual_bytes,compiler_flags,cpu_model,password_found,found_password
+1,2026-06-19 13:11:58,numeric_4.zip,266,ZipCrypto,digits,10,4,10000,10,8573,98.2906,87220.9,3.5,3538944,445765894144,Release -O3 -DNDEBUG,Apple M4,1,4821
+2,2026-06-19 13:11:59,numeric_5.zip,266,ZipCrypto,digits,10,5,100000,10,39039,440.181,88688.6,0.9,4210688,445765894144,Release -O3 -DNDEBUG,Apple M4,1,83920
+3,2026-06-19 13:12:04,lowercase_4.zip,266,ZipCrypto,lowercase,26,4,456976,10,379629,5164.14,73512.5,0,5177344,445765894144,Release -O3 -DNDEBUG,Apple M4,1,hjkd
+4,2026-06-19 13:13:23,lowercase_5.zip,266,ZipCrypto,lowercase,26,5,11881376,10,5754587,78768.3,73057.2,0,5341184,445765894144,Release -O3 -DNDEBUG,Apple M4,1,qwert
+5,2026-06-19 13:13:27,alphanum_4.zip,266,ZipCrypto,alphanum,36,4,1679616,10,348850,4817.12,72418.7,0,5357568,445765894144,Release -O3 -DNDEBUG,Apple M4,1,a1b2
+6,2026-06-19 13:16:17,alphanum_5.zip,266,ZipCrypto,alphanum,36,5,60466176,10,12254614,169231,72413.4,0,5357568,445765894144,Release -O3 -DNDEBUG,Apple M4,1,a1b2c
+7,2026-06-19 13:20:15,aes256_4.zip,288,AES-256,alphanum,36,4,1679616,10,1116212,238095,4688.09,0,5505024,445765894144,Release -O3 -DNDEBUG,Apple M4,1,x9yz
+8,2026-06-19 13:24:49,single_archive,0,ZipCrypto,digits,10,5,100000,2,67848,869.211,78057,0.1,3702784,445761617920,Release -O3 -DNDEBUG,Apple M4,1,83920
+9,2026-06-19 13:24:50,single_archive,0,ZipCrypto,digits,10,5,100000,4,35586,363.597,97872.1,0,3932160,445761617920,Release -O3 -DNDEBUG,Apple M4,1,83920
+10,2026-06-19 13:24:50,single_archive,0,ZipCrypto,digits,10,5,100000,6,3600,54.864,65616.8,0,3981312,445761617920,Release -O3 -DNDEBUG,Apple M4,1,83920
+11,2026-06-19 13:24:51,single_archive,0,ZipCrypto,digits,10,5,100000,8,71609,968.547,73934.4,0,4390912,445761617920,Release -O3 -DNDEBUG,Apple M4,1,83920
+12,2026-06-19 13:24:51,single_archive,0,ZipCrypto,digits,10,5,100000,10,39322,527.745,74509.5,0,4505600,445761617920,Release -O3 -DNDEBUG,Apple M4,1,83920
