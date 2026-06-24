@@ -1,20 +1,34 @@
 #include "archive/archive_manager.h"
 
+#include <cstdio>
 #include <cstring>
 #include <ctime>
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <zip.h>
-#include <openssl/rand.h>
-#include <openssl/aes.h>
 
 namespace archive {
+
+static bool create_zipcrypto_with_crc_check(const std::string& archive_path,
+                                              const std::string& password,
+                                              const std::string& source_file_path) {
+    std::string cmd = "zip -P '" + password + "' -j '" + archive_path
+                      + "' '" + source_file_path + "' 2>/dev/null";
+    int rc = std::system(cmd.c_str());
+    return rc == 0;
+}
 
 bool ArchiveManager::create_test_archive(const std::string& archive_path,
                                           const std::string& password,
                                           const std::string& source_file_path,
                                           EncryptionType encryption) {
+
+    if (encryption == EncryptionType::ZIP_CRYPTO) {
+        return create_zipcrypto_with_crc_check(archive_path, password,
+                                                source_file_path);
+    }
+
     int error_code = 0;
     zip_t* archive = zip_open(archive_path.c_str(),
                                ZIP_CREATE | ZIP_TRUNCATE,
@@ -177,6 +191,65 @@ std::vector<ArchiveInfo> ArchiveManager::create_test_suite(
             info.creation_date = date_buf;
 
             archives.push_back(info);
+        }
+    }
+
+    return archives;
+}
+
+std::vector<ArchiveInfo> ArchiveManager::create_benchmark_suite(
+    const std::string& output_dir,
+    const std::string& source_file_path) {
+
+    std::vector<ArchiveInfo> archives;
+
+    struct BenchEntry {
+        std::string prefix;
+        std::string charset_name;
+        EncryptionType encryption;
+        std::vector<std::string> passwords;
+    };
+
+    std::vector<BenchEntry> entries = {
+        {"zip_digits",    "digits",    EncryptionType::ZIP_CRYPTO,
+         {"7", "39", "482", "4821", "83920"}},
+        {"zip_lowercase", "lowercase", EncryptionType::ZIP_CRYPTO,
+         {"a", "hx", "hjk", "hjkd", "qwert"}},
+        {"zip_alphanum",  "alphanum",  EncryptionType::ZIP_CRYPTO,
+         {"a", "a1", "a1b", "a1b2", "a1b2c"}},
+        {"aes_alphanum",  "alphanum",  EncryptionType::AES_256,
+         {"x", "x9", "x9y", "x9yz", "x9yz2"}},
+    };
+
+    for (const auto& entry : entries) {
+        for (size_t i = 0; i < entry.passwords.size(); ++i) {
+            size_t len = i + 1;
+            std::string name = entry.prefix + "_L" + std::to_string(len) + ".zip";
+            std::string archive_path = output_dir + "/" + name;
+
+            if (create_test_archive(archive_path, entry.passwords[i],
+                                     source_file_path, entry.encryption)) {
+                std::ifstream f(archive_path, std::ios::binary | std::ios::ate);
+                int64_t archive_size = f.tellg();
+                f.close();
+
+                time_t now = time(nullptr);
+                char date_buf[32];
+                strftime(date_buf, sizeof(date_buf), "%Y-%m-%d %H:%M:%S",
+                         localtime(&now));
+
+                ArchiveInfo info;
+                info.name = name;
+                info.path = archive_path;
+                info.password = entry.passwords[i];
+                info.password_length = len;
+                info.charset_name = entry.charset_name;
+                info.encryption = entry.encryption;
+                info.archive_size_bytes = archive_size;
+                info.original_size_bytes = 0;
+                info.creation_date = date_buf;
+                archives.push_back(info);
+            }
         }
     }
 

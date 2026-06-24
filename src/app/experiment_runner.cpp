@@ -1,5 +1,6 @@
 #include "app/experiment_runner.h"
 #include "archive/archive_manager.h"
+#include "gpu/zipcrypto_util.h"
 #include <cmath>
 #include <cstdlib>
 #include <fstream>
@@ -12,6 +13,7 @@ ExperimentRunner::ExperimentRunner(const ExperimentConfig& config)
     : config_(config)
     , storage_(config.output_dir + "/experiments.db")
 {
+    std::system(("mkdir -p " + config_.output_dir).c_str());
     storage_.initialize();
 
 #ifdef NDEBUG
@@ -31,7 +33,7 @@ ExperimentRunner::ExperimentRunner(const ExperimentConfig& config)
 
 void ExperimentRunner::run_single_with_threads(
     const std::string& archive_path,
-    const std::string& /*known_password*/,
+    const std::string& known_password,
     size_t password_length,
     const std::string& charset_name,
     const charset::Charset& ch,
@@ -40,6 +42,12 @@ void ExperimentRunner::run_single_with_threads(
     const std::string& archive_name,
     int num_threads) {
 
+    uint64_t total_space = 0;
+    {
+        generator::PasswordGenerator gen(ch, password_length, password_length);
+        total_space = gen.total_space();
+    }
+
     std::cout << "\n  Running with " << num_threads << " thread(s), "
               << "charset=" << charset_name
               << " (size=" << ch.size() << "), "
@@ -47,15 +55,22 @@ void ExperimentRunner::run_single_with_threads(
               << ", protection=" << protection_type << std::endl;
 
     generator::PasswordGenerator gen(ch, password_length, password_length);
-
-    uint64_t total_space = gen.total_space();
     std::cout << "  Password space size: " << total_space << std::endl;
 
     stats::StatsCollector collector;
     collector.start();
 
     engine::BruteForceEngine engine(archive_path);
-    auto result = engine.run(gen, num_threads);
+
+    engine::BruteForceResult result;
+    if (config_.use_gpu) {
+        result = engine.run_gpu(gen, "", 65536, known_password);
+        if (!result.gpu_used) {
+            result = engine.run(gen, num_threads);
+        }
+    } else {
+        result = engine.run(gen, num_threads);
+    }
 
     collector.stop();
 
@@ -89,7 +104,8 @@ void ExperimentRunner::run_single_with_threads(
     arch_info.original_size_bytes = 0;
 
     auto record = storage_.build_record(arch_info, result, metrics,
-                                         compiler_flags_, cpu_model_);
+                                         compiler_flags_, cpu_model_,
+                                         config_.use_gpu ? "GPU" : "CPU");
     int id = storage_.save_result(record);
     std::cout << "  Saved as experiment #" << id << std::endl;
 }
@@ -200,7 +216,7 @@ void ExperimentRunner::run_full_matrix() {
             arch_info.charset_name = charset_name;
 
             auto record = storage_.build_record(arch_info, result, metrics,
-                                                 compiler_flags_, cpu_model_);
+                                                 compiler_flags_, cpu_model_, "CPU");
             storage_.save_result(record);
 
             std::cout << "  threads=" << tc
@@ -212,6 +228,101 @@ void ExperimentRunner::run_full_matrix() {
 
     std::cout << "\nMatrix complete. Exporting CSV..." << std::endl;
     storage_.export_csv(config_.output_dir + "/results.csv");
+}
+
+void ExperimentRunner::run_benchmarks() {
+    std::cout << "=== Running Automated Benchmarks ===\n"
+              << "Mode: " << config_.benchmark_mode
+              << ", Repeat: " << config_.repeat_count << "\n"
+              << std::endl;
+
+    std::string source_file = config_.source_file;
+    if (source_file.empty()) {
+        std::system(("mkdir -p " + config_.output_dir).c_str());
+        source_file = config_.output_dir + "/bench_source.txt";
+        std::ofstream src(source_file);
+        src << "Benchmark test file for ZIP bruteforce research.\n"
+            << "Apple Silicon M4 Performance Analysis\n"
+            << "Created: " << __DATE__ << " " << __TIME__ << "\n";
+        src.close();
+    }
+
+    std::string bench_data_dir = config_.output_dir + "/bench_data";
+    std::system(("mkdir -p " + bench_data_dir).c_str());
+
+    auto archives = archive::ArchiveManager::create_benchmark_suite(
+        bench_data_dir, source_file);
+
+    std::cout << "Created " << archives.size() << " benchmark archives\n" << std::endl;
+
+    std::vector<int> cpu_thread_counts = {1, 2, 4, 6, 8, 10};
+    bool run_cpu = (config_.benchmark_mode == "cpu" || config_.benchmark_mode == "both");
+    bool run_gpu = (config_.benchmark_mode == "gpu" || config_.benchmark_mode == "both");
+
+    for (int rep = 0; rep < config_.repeat_count; ++rep) {
+        std::cout << "--- Repeat " << (rep + 1) << "/"
+                  << config_.repeat_count << " ---" << std::endl;
+
+        for (const auto& arch : archives) {
+            auto ch = charset::Charset::from_type(
+                arch.charset_name == "digits" ? charset::Type::DIGITS
+                : arch.charset_name == "lowercase" ? charset::Type::LOWERCASE
+                : charset::Type::ALPHANUM);
+
+            std::string protection = archive::encryption_type_name(arch.encryption);
+
+            if (run_cpu) {
+                for (int tc : cpu_thread_counts) {
+                    run_single_with_threads(arch.path, arch.password,
+                                             arch.password_length, arch.charset_name,
+                                             ch, protection,
+                                             static_cast<int>(arch.archive_size_bytes),
+                                             arch.name, tc);
+                }
+            }
+
+            if (run_gpu) {
+                if (arch.encryption == archive::EncryptionType::AES_128 ||
+                    arch.encryption == archive::EncryptionType::AES_192 ||
+                    arch.encryption == archive::EncryptionType::AES_256 ||
+                    arch.encryption == archive::EncryptionType::ZIP_CRYPTO) {
+                    generator::PasswordGenerator gen(
+                        ch, arch.password_length, arch.password_length);
+                    uint64_t total_space = gen.total_space();
+
+                    stats::StatsCollector collector;
+                    collector.start();
+                    engine::BruteForceEngine engine(arch.path);
+                    auto result = engine.run_gpu(gen, "", 65536, arch.password);
+                    collector.stop();
+
+                    if (result.gpu_used && result.found) {
+                        double elapsed = collector.elapsed_ms();
+                        std::cout << "  GPU found: " << result.password
+                                  << " checks=" << result.total_checks
+                                  << " time=" << elapsed << "ms"
+                                  << " speed=" << result.checks_per_second << "/s" << std::endl;
+
+                        auto metrics = collector.build_metrics(
+                            1, result.total_checks, arch.password_length,
+                            arch.charset_name, ch.size(), total_space);
+
+                        auto record = storage_.build_record(
+                            arch, result, metrics, compiler_flags_, cpu_model_,
+                            result.gpu_used ? "GPU" : "CPU");
+                        storage_.save_result(record);
+                    } else {
+                        std::cout << "  GPU FAILED for " << arch.name << std::endl;
+                    }
+                }
+            }
+        }
+    }
+
+    std::cout << "\n=== Benchmarks Complete ===\nExporting CSV..." << std::endl;
+    storage_.export_csv(config_.output_dir + "/results.csv");
+    std::cout << "Results: " << config_.output_dir << "/results.csv" << std::endl;
+    std::cout << "Database: " << config_.output_dir << "/experiments.db" << std::endl;
 }
 
 void ExperimentRunner::run_all() {
@@ -271,9 +382,11 @@ void ExperimentRunner::run_all() {
                 0, "single_archive", config_.thread_counts);
         } else {
             std::cout << "\n--- Testing: " << config_.archive_path << " ---" << std::endl;
-            run_single_experiment(config_.archive_path, "",
-                                   archive::EncryptionType::ZIP_CRYPTO,
-                                   0, config_.archive_path);
+            auto ch = charset::Charset::from_type(config_.charset_type);
+            auto charset_name = charset::type_name(config_.charset_type);
+            run_single_with_threads(config_.archive_path, "",
+                                     config_.max_length, charset_name, ch,
+                                     "ZipCrypto", 0, config_.archive_path, threads);
         }
     }
 

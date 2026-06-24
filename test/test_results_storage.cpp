@@ -118,7 +118,7 @@ TEST_F(ResultsStorageTest, BuildRecord) {
     metrics.total_space_size = 10000;
     metrics.cpu_load_percent = 80.0;
 
-    auto rec = storage.build_record(arch_info, eng_result, metrics, "Debug", "Apple M4");
+    auto rec = storage.build_record(arch_info, eng_result, metrics, "Debug", "Apple M4", "CPU");
     EXPECT_EQ(rec.archive_name, "test.zip");
     EXPECT_TRUE(rec.password_found);
     EXPECT_EQ(rec.found_password, "1234");

@@ -50,6 +50,10 @@ public:
     static std::vector<ArchiveInfo> create_test_suite(
         const std::string& output_dir,
         const std::string& source_file_path);
+
+    static std::vector<ArchiveInfo> create_benchmark_suite(
+        const std::string& output_dir,
+        const std::string& source_file_path);
 };
 
 } // namespace archive

@@ -1,4 +1,5 @@
 #include "engine/brute_force_engine.h"
+#include "gpu/gpu_checker.h"
 #include <chrono>
 #include <iostream>
 
@@ -99,6 +100,95 @@ BruteForceResult BruteForceEngine::run(generator::PasswordGenerator& generator,
     result.num_threads = num_threads;
     result.worker_stats = worker_stats_;
     result.total_space_size = total_space;
+    result.gpu_used = false;
+
+    return result;
+}
+
+BruteForceResult BruteForceEngine::run_gpu(
+    generator::PasswordGenerator& generator,
+    const std::string& metallib_path,
+    size_t batch_size,
+    const std::string& known_password) {
+
+    BruteForceResult result;
+    result.found = false;
+    result.total_checks = 0;
+    result.total_elapsed_ms = 0;
+    result.checks_per_second = 0;
+    result.num_threads = 1;
+    result.total_space_size = generator.total_space();
+    result.gpu_used = true;
+
+    gpu::GpuChecker gpu_checker(archive_path_, metallib_path, known_password);
+    if (!gpu_checker.is_available()) {
+        std::cerr << "[GPU] GPU zipcrypto checker unavailable, falling back to CPU"
+                  << std::endl;
+        return result;
+    }
+
+    checker::PasswordChecker verify_checker(archive_path_);
+    auto t_start = std::chrono::high_resolution_clock::now();
+
+    size_t batch_idx = 0;
+    while (true) {
+        std::vector<std::string> batch;
+        batch.reserve(batch_size);
+
+        for (size_t i = 0; i < batch_size; ++i) {
+            auto pw_opt = generator.next();
+            if (!pw_opt) break;
+            batch.push_back(std::move(*pw_opt));
+        }
+
+        if (batch.empty()) break;
+
+        batch_idx++;
+        std::string gpu_found;
+        bool gpu_hit = gpu_checker.check_batch(batch, gpu_found);
+
+        if (gpu_hit) {
+            generator.reset_to(generator.password_to_index(gpu_found));
+
+            if (verify_checker.check(gpu_found)) {
+                result.found = true;
+                result.password = gpu_found;
+                result.total_checks = (batch_idx - 1) * batch_size
+                    + generator.current_index();
+                break;
+            }
+
+            generator.reset_to(generator.password_to_index(gpu_found) + 1);
+        }
+
+        uint64_t total = batch_idx * batch_size;
+        if (batch_idx % 10 == 0) {
+            double elapsed = std::chrono::duration<double, std::milli>(
+                std::chrono::high_resolution_clock::now() - t_start).count();
+            double speed = elapsed > 0 ? (total / (elapsed / 1000.0)) : 0;
+            std::cout << "  [GPU] batch " << batch_idx
+                      << "  checked " << total
+                      << "  speed " << static_cast<uint64_t>(speed) << "/s\r"
+                      << std::flush;
+        }
+    }
+
+    auto t_end = std::chrono::high_resolution_clock::now();
+    double elapsed = std::chrono::duration<double, std::milli>(t_end - t_start).count();
+    result.total_elapsed_ms = elapsed;
+    result.checks_per_second = (elapsed > 0)
+        ? (result.total_checks / (elapsed / 1000.0)) : 0.0;
+    if (result.total_checks == 0) {
+        result.total_checks = batch_idx * batch_size;
+    }
+
+    WorkerStats ws;
+    ws.thread_id = 0;
+    ws.checks_done = result.total_checks;
+    ws.elapsed_ms = elapsed;
+    ws.checks_per_second = result.checks_per_second;
+    ws.found_password = result.found;
+    result.worker_stats.push_back(ws);
 
     return result;
 }

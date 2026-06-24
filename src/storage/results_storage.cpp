@@ -53,7 +53,8 @@ void ResultsStorage::initialize() {
             compiler_flags TEXT,
             cpu_model TEXT,
             password_found INTEGER,
-            found_password TEXT
+            found_password TEXT,
+            execution_mode TEXT
         );
     )";
 
@@ -75,8 +76,8 @@ int ResultsStorage::save_result(const ExperimentRecord& record) {
             total_space_size, num_threads, total_checks, total_time_ms,
             checks_per_second, cpu_load_percent, memory_resident_bytes,
             memory_virtual_bytes, compiler_flags, cpu_model,
-            password_found, found_password
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+            password_found, found_password, execution_mode
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
     )";
 
     sqlite3_stmt* stmt = nullptr;
@@ -106,6 +107,7 @@ int ResultsStorage::save_result(const ExperimentRecord& record) {
     sqlite3_bind_text(stmt, 18, record.cpu_model.c_str(), -1, SQLITE_TRANSIENT);
     sqlite3_bind_int(stmt, 19, record.password_found ? 1 : 0);
     sqlite3_bind_text(stmt, 20, record.found_password.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 21, record.execution_mode.c_str(), -1, SQLITE_TRANSIENT);
 
     rc = sqlite3_step(stmt);
     sqlite3_finalize(stmt);
@@ -150,6 +152,7 @@ std::vector<ExperimentRecord> ResultsStorage::load_all() {
         rec.cpu_model = col_text(stmt, 18);
         rec.password_found = sqlite3_column_int(stmt, 19) != 0;
         rec.found_password = col_text(stmt, 20);
+        rec.execution_mode = col_text(stmt, 21);
         results.push_back(rec);
     }
 
@@ -192,6 +195,7 @@ std::vector<ExperimentRecord> ResultsStorage::load_by_archive(
         rec.cpu_model = col_text(stmt, 18);
         rec.password_found = sqlite3_column_int(stmt, 19) != 0;
         rec.found_password = col_text(stmt, 20);
+        rec.execution_mode = col_text(stmt, 21);
         results.push_back(rec);
     }
 
@@ -210,7 +214,7 @@ bool ResultsStorage::export_csv(const std::string& csv_path) {
         << "charset_name,charset_size,password_length,total_space_size,"
         << "num_threads,total_checks,total_time_ms,checks_per_second,"
         << "cpu_load_percent,memory_resident_bytes,memory_virtual_bytes,"
-        << "compiler_flags,cpu_model,password_found,found_password\n";
+        << "compiler_flags,cpu_model,password_found,found_password,execution_mode\n";
 
     for (const auto& rec : records) {
         csv << rec.id << ","
@@ -232,7 +236,8 @@ bool ResultsStorage::export_csv(const std::string& csv_path) {
             << rec.compiler_flags << ","
             << rec.cpu_model << ","
             << (rec.password_found ? 1 : 0) << ","
-            << rec.found_password << "\n";
+            << rec.found_password << ","
+            << rec.execution_mode << "\n";
     }
 
     csv.close();
@@ -244,7 +249,8 @@ ExperimentRecord ResultsStorage::build_record(
     const engine::BruteForceResult& engine_result,
     const stats::PerformanceMetrics& metrics,
     const std::string& compiler_flags,
-    const std::string& cpu_model) {
+    const std::string& cpu_model,
+    const std::string& execution_mode) {
 
     auto now = std::chrono::system_clock::now();
     auto t = std::chrono::system_clock::to_time_t(now);
@@ -273,6 +279,7 @@ ExperimentRecord ResultsStorage::build_record(
     record.cpu_model = cpu_model;
     record.password_found = engine_result.found;
     record.found_password = engine_result.password;
+    record.execution_mode = execution_mode;
 
     return record;
 }

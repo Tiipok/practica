@@ -1,8 +1,0 @@
-{
-	"InstallScripts" : 
-	[
-		"/Users/tipok/code/practica/build/cmake_install.cmake",
-		"/Users/tipok/code/practica/build/test/cmake_install.cmake"
-	],
-	"Parallel" : false
-}

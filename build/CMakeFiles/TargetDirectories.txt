@@ -1,9 +1,0 @@
-/Users/tipok/code/practica/build/CMakeFiles/zip_bruteforce_core.dir
-/Users/tipok/code/practica/build/CMakeFiles/zipbrute.dir
-/Users/tipok/code/practica/build/CMakeFiles/test.dir
-/Users/tipok/code/practica/build/CMakeFiles/edit_cache.dir
-/Users/tipok/code/practica/build/CMakeFiles/rebuild_cache.dir
-/Users/tipok/code/practica/build/test/CMakeFiles/zip_bruteforce_tests.dir
-/Users/tipok/code/practica/build/test/CMakeFiles/test.dir
-/Users/tipok/code/practica/build/test/CMakeFiles/edit_cache.dir
-/Users/tipok/code/practica/build/test/CMakeFiles/rebuild_cache.dir

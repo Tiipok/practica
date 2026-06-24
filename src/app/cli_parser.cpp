@@ -13,6 +13,10 @@ std::optional<ExperimentConfig> CliParser::parse(int argc, char* argv[]) {
     config.num_threads = 0;
     config.run_matrix = false;
     config.skip_test_suite = false;
+    config.use_gpu = false;
+    config.run_benchmark = false;
+    config.benchmark_mode = "both";
+    config.repeat_count = 3;
 
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
@@ -58,6 +62,14 @@ std::optional<ExperimentConfig> CliParser::parse(int argc, char* argv[]) {
             config.run_matrix = true;
         } else if (arg == "--skip-test-suite") {
             config.skip_test_suite = true;
+        } else if (arg == "--gpu") {
+            config.use_gpu = true;
+        } else if (arg == "--benchmark") {
+            config.run_benchmark = true;
+        } else if (arg == "--mode" && i + 1 < argc) {
+            config.benchmark_mode = argv[++i];
+        } else if (arg == "--repeat" && i + 1 < argc) {
+            config.repeat_count = std::stoi(argv[++i]);
         } else if (arg == "--source-file" && i + 1 < argc) {
             config.source_file = argv[++i];
         }
@@ -66,7 +78,8 @@ std::optional<ExperimentConfig> CliParser::parse(int argc, char* argv[]) {
     if (config.output_dir.empty()) {
         config.output_dir = "results";
     }
-    if (config.archive_path.empty() && !config.run_matrix && config.skip_test_suite) {
+    if (config.archive_path.empty() && !config.run_matrix
+        && config.skip_test_suite && !config.run_benchmark) {
         std::cerr << "Error: --archive or --matrix is required when skipping test suite" << std::endl;
         return std::nullopt;
     }
@@ -100,6 +113,10 @@ void CliParser::print_usage(const char* program_name) {
               << "  --thread-counts <n1,n2,...>  Comma-separated thread counts for comparison\n"
               << "  --matrix               Run full experiment matrix\n"
               << "  --skip-test-suite      Skip creating test archive suite\n"
+              << "  --gpu                  Use Metal GPU acceleration (Apple Silicon)\n"
+              << "  --benchmark            Run automated benchmark suite\n"
+              << "  --mode <cpu|gpu|both>  Benchmark mode (default: both)\n"
+              << "  --repeat <N>           Repeat count for each benchmark (default: 3)\n"
               << "  --source-file <path>   Source file for creating test archives\n"
               << "  --help, -h             Show this help\n"
               << std::endl;

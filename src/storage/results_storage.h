@@ -33,6 +33,7 @@ struct ExperimentRecord {
     std::string cpu_model;
     bool password_found;
     std::string found_password;
+    std::string execution_mode;
 };
 
 class ResultsStorage {
@@ -52,7 +53,8 @@ public:
         const engine::BruteForceResult& engine_result,
         const stats::PerformanceMetrics& metrics,
         const std::string& compiler_flags,
-        const std::string& cpu_model);
+        const std::string& cpu_model,
+        const std::string& execution_mode);
 
 private:
     sqlite3* db_;

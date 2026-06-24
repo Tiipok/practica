@@ -17,6 +17,10 @@ struct ExperimentConfig {
     std::vector<int> thread_counts;
     bool run_matrix;
     bool skip_test_suite;
+    bool use_gpu;
+    bool run_benchmark;
+    std::string benchmark_mode;
+    int repeat_count;
     std::string source_file;
 };
 

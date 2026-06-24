@@ -30,6 +30,7 @@ public:
                                 const std::vector<int>& thread_counts);
 
     void run_full_matrix();
+    void run_benchmarks();
     void run_all();
 
 private:

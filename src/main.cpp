@@ -13,7 +13,12 @@ int main(int argc, char* argv[]) {
     }
 
     app::ExperimentRunner runner(*config_opt);
-    runner.run_all();
+
+    if (config_opt->run_benchmark) {
+        runner.run_benchmarks();
+    } else {
+        runner.run_all();
+    }
 
     return 0;
 }

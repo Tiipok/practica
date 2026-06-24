@@ -1,3 +1,0 @@
-This is a test file for ZIP bruteforce research.
-Apple Silicon M4 Performance Analysis
-Created: Jun 19 2026 13:11:42

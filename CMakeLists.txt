@@ -27,6 +27,9 @@ add_library(zip_bruteforce_core STATIC
     src/storage/results_storage.cpp
     src/app/experiment_runner.cpp
     src/app/cli_parser.cpp
+    src/gpu/metal_kernel.mm
+    src/gpu/gpu_checker.cpp
+    src/gpu/zipcrypto_util.cpp
 )
 
 target_include_directories(zip_bruteforce_core PUBLIC
@@ -49,7 +52,10 @@ target_link_libraries(zip_bruteforce_core PUBLIC
 )
 
 add_executable(zipbrute src/main.cpp)
-target_link_libraries(zipbrute PRIVATE zip_bruteforce_core)
+target_link_libraries(zipbrute PRIVATE zip_bruteforce_core "-framework Foundation" "-framework Metal")
+set_target_properties(zipbrute PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+)
 
 enable_testing()
 add_subdirectory(test)

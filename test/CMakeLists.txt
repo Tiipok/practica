@@ -19,6 +19,8 @@ target_link_libraries(zip_bruteforce_tests PRIVATE
     GTest::gtest
     GTest::gtest_main
     pthread
+    "-framework Foundation"
+    "-framework Metal"
 )
 
 include(GoogleTest)

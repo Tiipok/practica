@@ -28,6 +28,7 @@ struct BruteForceResult {
     int num_threads;
     std::vector<WorkerStats> worker_stats;
     uint64_t total_space_size;
+    bool gpu_used;
 };
 
 class BruteForceEngine {
@@ -36,6 +37,11 @@ public:
 
     BruteForceResult run(generator::PasswordGenerator& generator,
                         int num_threads);
+
+    BruteForceResult run_gpu(generator::PasswordGenerator& generator,
+                             const std::string& metallib_path,
+                             size_t batch_size = 65536,
+                             const std::string& known_password = "");
 
 private:
     void worker_func(int thread_id,
