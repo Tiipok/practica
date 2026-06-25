@@ -22,6 +22,7 @@ struct ExperimentConfig {
     std::string benchmark_mode;
     int repeat_count;
     std::string source_file;
+    int random_seed = 0;
 };
 
 class CliParser {

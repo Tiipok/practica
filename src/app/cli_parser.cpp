@@ -72,6 +72,8 @@ std::optional<ExperimentConfig> CliParser::parse(int argc, char* argv[]) {
             config.repeat_count = std::stoi(argv[++i]);
         } else if (arg == "--source-file" && i + 1 < argc) {
             config.source_file = argv[++i];
+        } else if (arg == "--random-seed" && i + 1 < argc) {
+            config.random_seed = std::stoi(argv[++i]);
         }
     }
 
@@ -118,6 +120,7 @@ void CliParser::print_usage(const char* program_name) {
               << "  --mode <cpu|gpu|both>  Benchmark mode (default: both)\n"
               << "  --repeat <N>           Repeat count for each benchmark (default: 3)\n"
               << "  --source-file <path>   Source file for creating test archives\n"
+              << "  --random-seed <N>       Random seed for benchmark passwords (default: random)\n"
               << "  --help, -h             Show this help\n"
               << std::endl;
 }

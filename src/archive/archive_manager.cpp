@@ -3,7 +3,10 @@
 #include <ctime>
 #include <fstream>
 #include <iostream>
+#include <random>
 #include <zip.h>
+
+#include "generator/charset.h"
 
 namespace archive {
 
@@ -203,7 +206,19 @@ std::vector<ArchiveInfo> ArchiveManager::create_test_suite(
 std::vector<ArchiveInfo> ArchiveManager::create_benchmark_suite(
     const std::string& output_dir,
     const std::string& source_file_path,
-    size_t max_password_length) {
+    size_t max_password_length,
+    int seed) {
+
+    std::mt19937 rng;
+    if (seed > 0) {
+        rng.seed(static_cast<uint32_t>(seed));
+        std::cout << "Random seed: " << seed << std::endl;
+    } else {
+        std::random_device rd;
+        uint32_t rd_seed = rd();
+        rng.seed(rd_seed);
+        std::cout << "Random seed: " << rd_seed << " (from random_device)" << std::endl;
+    }
 
     std::vector<ArchiveInfo> archives;
 
@@ -211,34 +226,46 @@ std::vector<ArchiveInfo> ArchiveManager::create_benchmark_suite(
         std::string prefix;
         std::string charset_name;
         EncryptionType encryption;
-        std::vector<std::string> passwords;
     };
 
     std::vector<BenchEntry> entries = {
-        {"zip_digits",    "digits",    EncryptionType::ZIP_CRYPTO,
-         {"7", "39", "482", "4821", "83920"}},
-        {"zip_lowercase", "lowercase", EncryptionType::ZIP_CRYPTO,
-         {"a", "hx", "hjk", "hjkd", "qwert"}},
-        {"zip_alphanum",  "alphanum",  EncryptionType::ZIP_CRYPTO,
-         {"a", "a1", "a1b", "a1b2", "a1b2c"}},
-        {"aes_alphanum",  "alphanum",  EncryptionType::AES_256,
-         {"x", "x9", "x9y", "x9yz", "x9yz2"}},
+        {"zip_digits",    "digits",    EncryptionType::ZIP_CRYPTO},
+        {"zip_lowercase", "lowercase", EncryptionType::ZIP_CRYPTO},
+        {"zip_alphanum",  "alphanum",  EncryptionType::ZIP_CRYPTO},
+        {"aes_alphanum",  "alphanum",  EncryptionType::AES_256},
     };
 
     for (const auto& entry : entries) {
-        size_t count = std::min(entry.passwords.size(), max_password_length);
+        charset::Charset ch = charset::Charset::from_type(
+            entry.charset_name == "digits"    ? charset::Type::DIGITS :
+            entry.charset_name == "lowercase" ? charset::Type::LOWERCASE :
+                                                charset::Type::ALPHANUM);
+
+        size_t count = std::min(max_password_length, static_cast<size_t>(5));
         for (size_t i = 0; i < count; ++i) {
             size_t len = i + 1;
+
+            std::uniform_int_distribution<size_t> dist(0, ch.size() - 1);
+            std::string password;
+            password.reserve(len);
+            for (size_t j = 0; j < len; ++j) {
+                password += ch.at(dist(rng));
+            }
+
             std::string name = entry.prefix + "_L" + std::to_string(len) + ".zip";
             std::string archive_path = output_dir + "/" + name;
 
-            if (create_test_archive(archive_path, entry.passwords[i],
+            if (create_test_archive(archive_path, password,
                                      source_file_path, entry.encryption)) {
                 archives.push_back(build_archive_info(
-                    name, archive_path, entry.passwords[i],
+                    name, archive_path, password,
                     entry.charset_name, entry.encryption, source_file_path));
             }
         }
+    }
+
+    for (const auto& arch : archives) {
+        std::cout << "  " << arch.name << " password='" << arch.password << "'" << std::endl;
     }
 
     return archives;

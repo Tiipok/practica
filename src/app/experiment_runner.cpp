@@ -270,7 +270,7 @@ void ExperimentRunner::run_benchmarks() {
     std::filesystem::create_directories(bench_data_dir);
 
     auto archives = archive::ArchiveManager::create_benchmark_suite(
-        bench_data_dir, source_file, config_.max_length);
+        bench_data_dir, source_file, config_.max_length, config_.random_seed);
 
     std::cout << "Created " << archives.size() << " benchmark archives\n" << std::endl;
 
