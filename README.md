@@ -22,7 +22,7 @@ cmake --build .
 ## Benchmark
 
 ```bash
-./build/zipbrute --benchmark
+./build/zipbrute --benchmark --random-seed
 ```
 
 Key options:
@@ -31,3 +31,8 @@ Key options:
 - `--output-dir <path>` — results directory
 - `--max-len N` - max len of password
 - `--random-seed` - for random passoword in auto generated archives
+
+## Generating report
+```bash
+python3 scripts/generate_report.py
+```
