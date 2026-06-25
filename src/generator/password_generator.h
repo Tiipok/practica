@@ -34,7 +34,7 @@ private:
     uint64_t count_up_to_length(size_t len) const;
     size_t find_length_for_index(uint64_t index) const;
 
-    const charset::Charset& charset_;
+    charset::Charset charset_;
     size_t min_length_;
     size_t max_length_;
     uint64_t total_space_;

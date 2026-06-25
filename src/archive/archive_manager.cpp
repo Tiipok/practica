@@ -1,33 +1,63 @@
 #include "archive/archive_manager.h"
 
-#include <cstdio>
-#include <cstring>
 #include <ctime>
 #include <fstream>
 #include <iostream>
-#include <sstream>
 #include <zip.h>
 
 namespace archive {
 
-static bool create_zipcrypto_with_crc_check(const std::string& archive_path,
-                                              const std::string& password,
-                                              const std::string& source_file_path) {
-    std::string cmd = "zip -P '" + password + "' -j '" + archive_path
-                      + "' '" + source_file_path + "' 2>/dev/null";
-    int rc = std::system(cmd.c_str());
-    return rc == 0;
+namespace {
+
+constexpr int kBufferSize = 4096;
+
+int64_t get_file_size(const std::string& file_path) {
+    std::ifstream f(file_path, std::ios::binary | std::ios::ate);
+    return f.tellg();
 }
+
+std::string format_timestamp() {
+    time_t now = time(nullptr);
+    char buf[32];
+    strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", localtime(&now));
+    return buf;
+}
+
+ArchiveInfo build_archive_info(const std::string& name,
+                                const std::string& path,
+                                const std::string& password,
+                                const std::string& charset_name,
+                                EncryptionType encryption,
+                                const std::string& source_file_path) {
+    ArchiveInfo info;
+    info.name = name;
+    info.path = path;
+    info.password = password;
+    info.password_length = password.length();
+    info.charset_name = charset_name;
+    info.encryption = encryption;
+    info.archive_size_bytes = get_file_size(path);
+    info.original_size_bytes = get_file_size(source_file_path);
+    info.creation_date = format_timestamp();
+    return info;
+}
+
+int encryption_to_zip_method(EncryptionType encryption) {
+    switch (encryption) {
+        case EncryptionType::AES_128: return ZIP_EM_AES_128;
+        case EncryptionType::AES_192: return ZIP_EM_AES_192;
+        case EncryptionType::AES_256: return ZIP_EM_AES_256;
+        case EncryptionType::ZIP_CRYPTO:
+        default:                      return ZIP_EM_TRAD_PKWARE;
+    }
+}
+
+} // namespace
 
 bool ArchiveManager::create_test_archive(const std::string& archive_path,
                                           const std::string& password,
                                           const std::string& source_file_path,
                                           EncryptionType encryption) {
-
-    if (encryption == EncryptionType::ZIP_CRYPTO) {
-        return create_zipcrypto_with_crc_check(archive_path, password,
-                                                source_file_path);
-    }
 
     int error_code = 0;
     zip_t* archive = zip_open(archive_path.c_str(),
@@ -49,18 +79,20 @@ bool ArchiveManager::create_test_archive(const std::string& archive_path,
     auto file_size = src.tellg();
     src.seekg(0, std::ios::beg);
 
-    std::vector<char> buffer(file_size);
+    std::vector<char> buffer(static_cast<size_t>(file_size));
     src.read(buffer.data(), file_size);
     src.close();
 
-    zip_source_t* source = zip_source_buffer(archive, buffer.data(), file_size, 0);
+    zip_source_t* source = zip_source_buffer(archive, buffer.data(),
+        static_cast<zip_uint64_t>(file_size), 0);
     if (!source) {
         std::cerr << "Failed to create zip source buffer" << std::endl;
         zip_close(archive);
         return false;
     }
 
-    std::string entry_name = source_file_path.substr(source_file_path.find_last_of('/') + 1);
+    std::string entry_name = source_file_path.substr(
+        source_file_path.find_last_of('/') + 1);
 
     zip_int64_t idx = zip_file_add(archive, entry_name.c_str(), source,
                                     ZIP_FL_ENC_UTF_8 | ZIP_FL_OVERWRITE);
@@ -73,13 +105,7 @@ bool ArchiveManager::create_test_archive(const std::string& archive_path,
     }
 
     if (encryption != EncryptionType::NONE) {
-        int enc_method = ZIP_EM_TRAD_PKWARE;
-        switch (encryption) {
-            case EncryptionType::AES_128: enc_method = ZIP_EM_AES_128; break;
-            case EncryptionType::AES_192: enc_method = ZIP_EM_AES_192; break;
-            case EncryptionType::AES_256: enc_method = ZIP_EM_AES_256; break;
-            default: enc_method = ZIP_EM_TRAD_PKWARE; break;
-        }
+        int enc_method = encryption_to_zip_method(encryption);
 
         if (zip_file_set_encryption(archive, idx, enc_method,
                                      password.c_str()) < 0) {
@@ -118,14 +144,13 @@ bool ArchiveManager::verify_password(const std::string& archive_path,
     }
 
     const char* pwd = password.c_str();
-
     zip_file_t* file = zip_fopen_encrypted(archive, entry_name, 0, pwd);
     if (!file) {
         zip_close(archive);
         return false;
     }
 
-    char buf[4096];
+    char buf[kBufferSize];
     zip_int64_t total = 0;
     zip_int64_t n;
     while ((n = zip_fread(file, buf, sizeof(buf))) > 0) {
@@ -166,31 +191,9 @@ std::vector<ArchiveInfo> ArchiveManager::create_test_suite(
 
         if (create_test_archive(archive_path, tc.password,
                                  source_file_path, tc.encryption)) {
-            std::ifstream f(archive_path, std::ios::binary | std::ios::ate);
-            int64_t archive_size = f.tellg();
-            f.close();
-
-            std::ifstream src_file(source_file_path, std::ios::binary | std::ios::ate);
-            int64_t original_size = src_file.tellg();
-            src_file.close();
-
-            time_t now = time(nullptr);
-            char date_buf[32];
-            strftime(date_buf, sizeof(date_buf), "%Y-%m-%d %H:%M:%S",
-                     localtime(&now));
-
-            ArchiveInfo info;
-            info.name = tc.name;
-            info.path = archive_path;
-            info.password = tc.password;
-            info.password_length = tc.password.length();
-            info.charset_name = tc.charset_name;
-            info.encryption = tc.encryption;
-            info.archive_size_bytes = archive_size;
-            info.original_size_bytes = original_size;
-            info.creation_date = date_buf;
-
-            archives.push_back(info);
+            archives.push_back(build_archive_info(
+                tc.name, archive_path, tc.password,
+                tc.charset_name, tc.encryption, source_file_path));
         }
     }
 
@@ -199,7 +202,8 @@ std::vector<ArchiveInfo> ArchiveManager::create_test_suite(
 
 std::vector<ArchiveInfo> ArchiveManager::create_benchmark_suite(
     const std::string& output_dir,
-    const std::string& source_file_path) {
+    const std::string& source_file_path,
+    size_t max_password_length) {
 
     std::vector<ArchiveInfo> archives;
 
@@ -222,33 +226,17 @@ std::vector<ArchiveInfo> ArchiveManager::create_benchmark_suite(
     };
 
     for (const auto& entry : entries) {
-        for (size_t i = 0; i < entry.passwords.size(); ++i) {
+        size_t count = std::min(entry.passwords.size(), max_password_length);
+        for (size_t i = 0; i < count; ++i) {
             size_t len = i + 1;
             std::string name = entry.prefix + "_L" + std::to_string(len) + ".zip";
             std::string archive_path = output_dir + "/" + name;
 
             if (create_test_archive(archive_path, entry.passwords[i],
                                      source_file_path, entry.encryption)) {
-                std::ifstream f(archive_path, std::ios::binary | std::ios::ate);
-                int64_t archive_size = f.tellg();
-                f.close();
-
-                time_t now = time(nullptr);
-                char date_buf[32];
-                strftime(date_buf, sizeof(date_buf), "%Y-%m-%d %H:%M:%S",
-                         localtime(&now));
-
-                ArchiveInfo info;
-                info.name = name;
-                info.path = archive_path;
-                info.password = entry.passwords[i];
-                info.password_length = len;
-                info.charset_name = entry.charset_name;
-                info.encryption = entry.encryption;
-                info.archive_size_bytes = archive_size;
-                info.original_size_bytes = 0;
-                info.creation_date = date_buf;
-                archives.push_back(info);
+                archives.push_back(build_archive_info(
+                    name, archive_path, entry.passwords[i],
+                    entry.charset_name, entry.encryption, source_file_path));
             }
         }
     }

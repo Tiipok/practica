@@ -16,7 +16,7 @@ classDiagram
     }
 
     class PasswordGenerator {
-        -Charset& charset_
+        -Charset charset_
         -size_t min_length_
         -size_t max_length_
         -uint64_t total_space_
@@ -25,9 +25,11 @@ classDiagram
         +PasswordGenerator(Charset&, size_t, size_t)
         +next() optional~string~
         +set_range(uint64_t, uint64_t)
+        +reset_to(uint64_t)
         +index_to_password(uint64_t) string
         +password_to_index(string) uint64_t
         +total_space() uint64_t
+        +current_index() uint64_t
     }
 
     class PasswordChecker {
@@ -46,17 +48,54 @@ classDiagram
         -vector~WorkerStats~ worker_stats_
         +BruteForceEngine(string)
         +run(PasswordGenerator&, int) BruteForceResult
+        +run_gpu(PasswordGenerator&, size_t, string) BruteForceResult
+    }
+
+    class GpuChecker {
+        -string archive_path_
+        -MetalKernel kernel_
+        -bool available_
+        -bool is_aes_
+        -uint8_t encrypted_data_[16]
+        -uint8_t expected_bytes_[4]
+        -uint8_t aes_salt_[16]
+        -uint8_t aes_enc_verify_[2]
+        +GpuChecker(string, string)
+        +is_available() bool
+        +is_aes() bool
+        +check_batch(vector~string~, string&) bool
+        +set_expected_bytes(uint8_t[4])
+    }
+
+    class MetalKernel {
+        -void* device_
+        -void* command_queue_
+        -void* pipeline_state_
+        -void* aes_pipeline_state_
+        -bool available_
+        -bool aes_available_
+        +initialize(string, string) bool
+        +initialize_device() bool
+        +initialize_aes() bool
+        +check_passwords(...) bool
+        +check_aes_passwords(...) bool
+    }
+
+    class ZipCryptoUtil {
+        +compute_zipcrypto_expected_bytes(string, uint8_t[16], uint8_t[4])
     }
 
     class ArchiveManager {
         +create_test_archive(string,string,string,EncType) bool
         +verify_password(string,string) bool
         +create_test_suite(string,string) vector~ArchiveInfo~
+        +create_benchmark_suite(string,string) vector~ArchiveInfo~
     }
 
     class StatsCollector {
         -time_point start_time_
         -time_point end_time_
+        -bool running_
         +start()
         +stop()
         +elapsed_ms() double
@@ -83,6 +122,7 @@ classDiagram
         -string compiler_flags_
         -string cpu_model_
         +run_all()
+        +run_benchmarks()
         +run_single_experiment(...)
         +run_thread_comparison(...)
         +run_full_matrix()
@@ -103,16 +143,49 @@ classDiagram
         +vector~int~ thread_counts
         +bool run_matrix
         +bool skip_test_suite
+        +bool use_gpu
+        +bool run_benchmark
+        +string benchmark_mode
+        +int repeat_count
         +string source_file
     }
 
     Charset --* PasswordGenerator
-    PasswordChecker --> Charset
     BruteForceEngine --> PasswordGenerator
     BruteForceEngine --> PasswordChecker
+    BruteForceEngine --> GpuChecker
+    GpuChecker --> MetalKernel
+    GpuChecker --> ZipCryptoUtil
     ExperimentRunner --> BruteForceEngine
     ExperimentRunner --> StatsCollector
     ExperimentRunner --> ResultsStorage
     ExperimentRunner --> ArchiveManager
     CliParser --> ExperimentConfig
+```
+
+## Структура директорий исходного кода
+
+```
+src/
+├── main.cpp                  # Точка входа, выбор режима (run_all / benchmarks)
+├── app/
+│   ├── cli_parser.h/cpp      # Разбор аргументов командной строки
+│   └── experiment_runner.h/cpp # Оркестратор экспериментов (CPU/GPU/benchmarks)
+├── archive/
+│   └── archive_manager.h/cpp # Создание и верификация ZIP-архивов (libzip)
+├── checker/
+│   └── password_checker.h/cpp # Проверка пароля через libzip
+├── engine/
+│   └── brute_force_engine.h/cpp # CPU многопоточный и GPU батчевый перебор
+├── generator/
+│   ├── charset.h/cpp          # Алфавиты: digits (10), lowercase (26), alphanum (36)
+│   └── password_generator.h/cpp # Итератор парольного пространства (index ↔ password)
+├── gpu/
+│   ├── gpu_checker.h/cpp      # GPU-проверка батча паролей (ZipCrypto / AES-256)
+│   ├── metal_kernel.h/mm      # Metal API обёртка (inline Metal shaders)
+│   └── zipcrypto_util.h/cpp   # CPU-side ZipCrypto key schedule
+├── stats/
+│   └── stats_collector.h/cpp  # Замер времени, памяти, загрузки CPU (Mach API)
+└── storage/
+    └── results_storage.h/cpp  # Сохранение в SQLite + экспорт CSV с экранированием
 ```

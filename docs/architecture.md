@@ -31,7 +31,15 @@
            │         │ (checker)  │       │            │
            │         └────────────┘       │            │
            │                              │            │
-           └──────────────────────────────┘            │
+           │    ┌─────────────────┐       │            │
+           │    │  GpuChecker     │       │            │
+           │    │  MetalKernel    │       │            │
+           │    │  (gpu/)         │       │            │
+           │    └────────┬────────┘       │            │
+           │             │                │            │
+           │             │ Metal API      │            │
+           │             │                │            │
+           └─────────────┴────────────────┘            │
                                                        │
               ┌──────────────────────┐                 │
               │   ResultsStorage     │                 │
@@ -50,17 +58,17 @@
 ```
 [CLI Parser] ──► [ExperimentRunner]
                       │
-        ┌─────────────┼─────────────────┐
-        ▼             ▼                  ▼
-[ArchiveManager] [BruteForceEngine] [StatsCollector]
-    │                  │                   │
-    │ libzip           ├─► [WorkerPool]    │ mach API
-    │                  │    (std::thread)  │ std::chrono
-    │                  │                   │
-    │                  └─► [PasswordChkr]  │
-    │                       (libzip)       │
-    │                                      │
-    └──────────────────────────────────────┘
+        ┌─────────────┼─────────────────┬──────────────────┐
+        ▼             ▼                  ▼                   ▼
+[ArchiveManager] [BruteForceEngine] [StatsCollector]   [GpuChecker]
+    │                  │                   │               │
+    │ libzip           ├─► [WorkerPool]    │ mach API      │ Metal API
+    │                  │    (std::thread)  │ std::chrono   │ MetalKernel
+    │                  │                   │               │ inline shaders
+    │                  └─► [PasswordChkr]  │               │
+    │                       (libzip)       │               │
+    │                                      │               │
+    └──────────────────────────────────────┴───────────────┘
                        │
                        ▼
                [ResultsStorage]
@@ -99,22 +107,33 @@
 - Чтение зашифрованного файла с верификацией CRC
 
 ### 6. BruteForceEngine (`src/engine/brute_force_engine.h/cpp`)
-- Многопоточный пул (std::thread)
+- Многопоточный пул (std::thread) для CPU-перебора
 - Равномерное распределение диапазонов между потоками
 - atomic<bool> для сигнала остановки
 - Сбор статистики по каждому потоку
+- GPU-режим: батчевый перебор через GpuChecker с верификацией на CPU
 
-### 7. StatsCollector (`src/stats/stats_collector.h/cpp`)
+### 7. GpuChecker (`src/gpu/gpu_checker.h/cpp`, `metal_kernel.h/mm`)
+- Извлечение зашифрованных данных из ZIP-архива (ZipCrypto header / AES salt+verification)
+- Упаковка паролей в uint64 для передачи на GPU
+- MetalKernel: компиляция inline Metal shaders (ZipCrypto + AES-256)
+- Батчевая проверка на GPU с атомарным флагом нахождения
+
+### 8. ZipCryptoUtil (`src/gpu/zipcrypto_util.h/cpp`)
+- CPU-side реализация ZipCrypto key schedule (CRC32, decrypt_byte)
+- Предвычисление ожидаемых байт для GPU-верификации (когда известен пароль)
+
+### 9. StatsCollector (`src/stats/stats_collector.h/cpp`)
 - Замер времени (std::chrono::high_resolution_clock)
 - Потребление памяти (Mach task_info)
 - Загрузка CPU (Mach thread_info)
 
-### 8. ResultsStorage (`src/storage/results_storage.h/cpp`)
+### 10. ResultsStorage (`src/storage/results_storage.h/cpp`)
 - SQLite-база для хранения результатов
 - Экспорт в CSV
 - CRUD-операции
 
-### 9. generate_report.py (`scripts/`)
+### 11. generate_report.py (`scripts/`)
 - Чтение CSV
 - Построение графиков (matplotlib)
 - Генерация PDF-отчёта
@@ -127,7 +146,7 @@
 ## Выходные данные
 
 - SQLite база данных (experiments.db)
-- CSV файл (results.csv)
+- CSV файл (results.csv) с экранированием полей
 - PDF отчёт с графиками и таблицами (report.pdf)
 
 ## Алгоритм эксперимента
@@ -135,9 +154,10 @@
 1. Создание/загрузка тестового ZIP-архива с известным паролем
 2. Задание параметров парольного пространства (алфавит, длина)
 3. Вычисление размера пространства
-4. Разделение пространства на N равных диапазонов (по числу потоков)
-5. Запуск N потоков, каждый перебирает свой диапазон
-6. При нахождении пароля: atomic-флаг → остановка всех потоков
+4. Режим CPU: разделение пространства на N равных диапазонов (по числу потоков)
+   Режим GPU: батчевое формирование паролей, отправка на Metal
+5. Запуск перебора (CPU многопоточно или GPU батчами)
+6. При нахождении пароля: atomic-флаг → остановка всех потоков (CPU) / верификация libzip (GPU)
 7. Фиксация времени, метрик, количества проверок
 8. Сохранение в БД и CSV
-9. Повтор для разных параметров (длина, алфавит, потоки, тип защиты)
+9. Повтор для разных параметров (длина, алфавит, потоки, тип защиты, режим CPU/GPU)

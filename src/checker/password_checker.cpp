@@ -4,6 +4,10 @@
 
 namespace checker {
 
+namespace {
+constexpr int kReadBufferSize = 4096;
+} // namespace
+
 PasswordChecker::PasswordChecker(const std::string& archive_path)
     : archive_path_(archive_path) {}
 
@@ -45,7 +49,7 @@ bool PasswordChecker::check(const std::string& password) {
         return false;
     }
 
-    char buf[4096];
+    char buf[kReadBufferSize];
     zip_int64_t total = 0;
     zip_int64_t n;
     while ((n = zip_fread(file, buf, sizeof(buf))) > 0) {

@@ -24,7 +24,8 @@ CREATE TABLE experiments (
     compiler_flags TEXT,        -- Debug/Release
     cpu_model TEXT,             -- Apple M4
     password_found INTEGER,     -- 0 или 1
-    found_password TEXT         -- найденный пароль (если найден)
+    found_password TEXT,        -- найденный пароль (если найден)
+    execution_mode TEXT         -- CPU или GPU
 );
 ```
 
@@ -52,6 +53,7 @@ CREATE TABLE experiments (
 | cpu_model | string | Модель процессора |
 | password_found | int | Пароль найден (0/1) |
 | found_password | string | Найденный пароль |
+| execution_mode | string | Режим выполнения (CPU / GPU) |
 
 ## Рекомендуемые эксперименты
 
@@ -62,10 +64,22 @@ CREATE TABLE experiments (
 ./build/zipbrute --output-dir results --charset alphanum  --matrix
 ```
 
-Или для сравнения количества потоков:
+Сравнение количества потоков:
 ```bash
 ./build/zipbrute --output-dir results \
     --archive results/test_data/numeric_5.zip \
     --charset digits --min-len 5 --max-len 5 \
     --thread-counts 1,2,4,6,8,10
+```
+
+GPU-ускоренный перебор:
+```bash
+./build/zipbrute --gpu \
+    --archive results/test_data/numeric_5.zip \
+    --charset digits --min-len 5 --max-len 5
+```
+
+Автоматический бенчмарк (CPU + GPU, 3 повтора):
+```bash
+./build/zipbrute --benchmark --mode both --repeat 3 --output-dir results/full
 ```

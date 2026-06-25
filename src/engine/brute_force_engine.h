@@ -1,7 +1,6 @@
 #pragma once
 
 #include "generator/password_generator.h"
-#include "checker/password_checker.h"
 #include <atomic>
 #include <cstdint>
 #include <mutex>
@@ -39,17 +38,10 @@ public:
                         int num_threads);
 
     BruteForceResult run_gpu(generator::PasswordGenerator& generator,
-                             const std::string& metallib_path,
                              size_t batch_size = 65536,
                              const std::string& known_password = "");
 
 private:
-    void worker_func(int thread_id,
-                     uint64_t range_start,
-                     uint64_t range_end,
-                     const generator::PasswordGenerator& gen_template,
-                     WorkerStats& stats);
-
     std::string archive_path_;
     std::atomic<bool> password_found_;
     std::atomic<uint64_t> total_checks_;

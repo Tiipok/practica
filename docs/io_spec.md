@@ -13,6 +13,10 @@
 | `--thread-counts` | string | — | Список количества потоков через запятую |
 | `--matrix` | flag | false | Запуск матрицы экспериментов |
 | `--skip-test-suite` | flag | false | Пропустить создание тестовых архивов |
+| `--gpu` | flag | false | Использовать Metal GPU (Apple Silicon) |
+| `--benchmark` | flag | false | Запуск автоматического бенчмарка |
+| `--mode` | string | both | Режим бенчмарка: cpu, gpu, both |
+| `--repeat` | int | 3 | Количество повторов для каждого бенчмарка |
 | `--source-file` | string | — | Исходный файл для тестовых архивов |
 
 ## Входные данные (тестовые архивы)
@@ -39,11 +43,12 @@ archive_size_bytes, protection_type, charset_name, charset_size,
 password_length, total_space_size, num_threads, total_checks,
 total_time_ms, checks_per_second, cpu_load_percent,
 memory_resident_bytes, memory_virtual_bytes, compiler_flags,
-cpu_model, password_found, found_password.
+cpu_model, password_found, found_password, execution_mode.
 
 ### CSV файл (`results/results.csv`)
 
-Те же поля в формате CSV для импорта в Python/Excel.
+Те же поля в формате CSV (с экранированием полей, содержащих запятые или кавычки)
+для импорта в Python/Excel.
 
 ### PDF отчёт (`results/report.pdf`)
 

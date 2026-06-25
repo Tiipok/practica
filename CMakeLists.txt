@@ -14,7 +14,6 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -march=native -mtune=native")
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(LIBZIP REQUIRED libzip)
-pkg_check_modules(OPENSSL REQUIRED openssl)
 pkg_check_modules(SQLITE3 REQUIRED sqlite3)
 
 add_library(zip_bruteforce_core STATIC
@@ -35,19 +34,16 @@ add_library(zip_bruteforce_core STATIC
 target_include_directories(zip_bruteforce_core PUBLIC
     ${CMAKE_SOURCE_DIR}/src
     ${LIBZIP_INCLUDE_DIRS}
-    ${OPENSSL_INCLUDE_DIRS}
     ${SQLITE3_INCLUDE_DIRS}
 )
 
 target_link_directories(zip_bruteforce_core PUBLIC
     ${LIBZIP_LIBRARY_DIRS}
-    ${OPENSSL_LIBRARY_DIRS}
     ${SQLITE3_LIBRARY_DIRS}
 )
 
 target_link_libraries(zip_bruteforce_core PUBLIC
     ${LIBZIP_LIBRARIES}
-    ${OPENSSL_LIBRARIES}
     ${SQLITE3_LIBRARIES}
 )
 

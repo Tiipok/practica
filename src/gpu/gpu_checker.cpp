@@ -1,5 +1,6 @@
 #include "gpu/gpu_checker.h"
 #include "gpu/zipcrypto_util.h"
+#include <algorithm>
 #include <cstring>
 #include <fstream>
 #include <iostream>
@@ -7,8 +8,32 @@
 
 namespace gpu {
 
+namespace {
+
+constexpr uint32_t kZipLocalHeaderSignature = 0x04034b50;
+constexpr size_t kZipLocalHeaderSize = 30;
+constexpr size_t kEncryptedDataSize = 16;
+constexpr size_t kAesSaltSize = 16;
+constexpr size_t kAesVerificationSize = 2;
+constexpr size_t kMaxPasswordPackLength = 8;
+
+constexpr uint8_t kZipCryptoExpectedCRC[4] = {0x0d, 0xca, 0x41, 0x0a};
+
+uint16_t read_u16(const uint8_t* p) {
+    return static_cast<uint16_t>(p[0])
+        | (static_cast<uint16_t>(p[1]) << 8);
+}
+
+uint32_t read_u32(const uint8_t* p) {
+    return static_cast<uint32_t>(p[0])
+        | (static_cast<uint32_t>(p[1]) << 8)
+        | (static_cast<uint32_t>(p[2]) << 16)
+        | (static_cast<uint32_t>(p[3]) << 24);
+}
+
+} // namespace
+
 GpuChecker::GpuChecker(const std::string& archive_path,
-                       const std::string& /*metallib_path*/,
                        const std::string& known_password)
     : archive_path_(archive_path)
     , available_(false)
@@ -77,70 +102,55 @@ void GpuChecker::set_expected_bytes(const uint8_t bytes[4]) {
 }
 
 bool GpuChecker::extract_zipcrypto_data() {
-    auto read_u16 = [](const uint8_t* p) -> uint16_t {
-        return static_cast<uint16_t>(p[0]) | (static_cast<uint16_t>(p[1]) << 8);
-    };
-
     std::ifstream file(archive_path_, std::ios::binary);
     if (!file.is_open()) {
         std::cerr << "[GPU] Failed to open file" << std::endl;
         return false;
     }
 
-    uint8_t header[30];
-    if (!file.read(reinterpret_cast<char*>(header), 30)) return false;
+    uint8_t header[kZipLocalHeaderSize];
+    if (!file.read(reinterpret_cast<char*>(header), kZipLocalHeaderSize)) return false;
 
-    uint32_t sig = static_cast<uint32_t>(header[0])
-        | (static_cast<uint32_t>(header[1]) << 8)
-        | (static_cast<uint32_t>(header[2]) << 16)
-        | (static_cast<uint32_t>(header[3]) << 24);
-    if (sig != 0x04034b50) return false;
+    if (read_u32(header) != kZipLocalHeaderSignature) return false;
 
     uint16_t name_len = read_u16(header + 26);
     uint16_t extra_len = read_u16(header + 28);
-    file.seekg(30 + name_len + extra_len, std::ios::beg);
-    if (!file.read(reinterpret_cast<char*>(encrypted_data_), 16)) return false;
+    file.seekg(static_cast<std::streamoff>(kZipLocalHeaderSize + name_len + extra_len),
+               std::ios::beg);
+    if (!file.read(reinterpret_cast<char*>(encrypted_data_), kEncryptedDataSize)) return false;
 
-    expected_bytes_[0] = 0x0d;
-    expected_bytes_[1] = 0xca;
-    expected_bytes_[2] = 0x41;
-    expected_bytes_[3] = 0x0a;
+    for (size_t i = 0; i < 4; ++i) {
+        expected_bytes_[i] = kZipCryptoExpectedCRC[i];
+    }
     return true;
 }
 
 bool GpuChecker::extract_aes_data() {
-    auto read_u16 = [](const uint8_t* p) -> uint16_t {
-        return static_cast<uint16_t>(p[0]) | (static_cast<uint16_t>(p[1]) << 8);
-    };
-
     std::ifstream file(archive_path_, std::ios::binary);
     if (!file.is_open()) {
         std::cerr << "[GPU] Failed to open file" << std::endl;
         return false;
     }
 
-    uint8_t header[30];
-    if (!file.read(reinterpret_cast<char*>(header), 30)) return false;
+    uint8_t header[kZipLocalHeaderSize];
+    if (!file.read(reinterpret_cast<char*>(header), kZipLocalHeaderSize)) return false;
 
-    uint32_t sig = static_cast<uint32_t>(header[0])
-        | (static_cast<uint32_t>(header[1]) << 8)
-        | (static_cast<uint32_t>(header[2]) << 16)
-        | (static_cast<uint32_t>(header[3]) << 24);
-    if (sig != 0x04034b50) {
+    if (read_u32(header) != kZipLocalHeaderSignature) {
         std::cerr << "[GPU] Invalid ZIP signature" << std::endl;
         return false;
     }
 
     uint16_t name_len = read_u16(header + 26);
     uint16_t extra_len = read_u16(header + 28);
-    file.seekg(30 + name_len + extra_len, std::ios::beg);
+    file.seekg(static_cast<std::streamoff>(kZipLocalHeaderSize + name_len + extra_len),
+               std::ios::beg);
 
-    if (!file.read(reinterpret_cast<char*>(aes_salt_), 16)) {
+    if (!file.read(reinterpret_cast<char*>(aes_salt_), kAesSaltSize)) {
         std::cerr << "[GPU] Failed to read AES salt" << std::endl;
         return false;
     }
 
-    if (!file.read(reinterpret_cast<char*>(aes_enc_verify_), 2)) {
+    if (!file.read(reinterpret_cast<char*>(aes_enc_verify_), kAesVerificationSize)) {
         std::cerr << "[GPU] Failed to read AES verification" << std::endl;
         return false;
     }
@@ -185,7 +195,7 @@ bool GpuChecker::check_batch(const std::vector<std::string>& passwords,
 
 uint64_t GpuChecker::pack_password(const std::string& password) const {
     uint64_t result = 0;
-    size_t len = std::min(password.length(), size_t(8));
+    size_t len = std::min(password.length(), kMaxPasswordPackLength);
     for (size_t i = 0; i < len; i++) {
         result |= (static_cast<uint64_t>(
             static_cast<uint8_t>(password[i])) << (i * 8));

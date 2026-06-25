@@ -53,7 +53,8 @@ public:
 
     static std::vector<ArchiveInfo> create_benchmark_suite(
         const std::string& output_dir,
-        const std::string& source_file_path);
+        const std::string& source_file_path,
+        size_t max_password_length = 5);
 };
 
 } // namespace archive

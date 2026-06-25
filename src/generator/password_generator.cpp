@@ -1,5 +1,4 @@
 #include "generator/password_generator.h"
-#include <cmath>
 #include <stdexcept>
 
 namespace generator {

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "gpu/metal_kernel.h"
-#include "generator/password_generator.h"
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -11,7 +10,6 @@ namespace gpu {
 class GpuChecker {
 public:
     GpuChecker(const std::string& archive_path,
-               const std::string& metallib_path,
                const std::string& known_password = "");
 
     void set_expected_bytes(const uint8_t bytes[4]);

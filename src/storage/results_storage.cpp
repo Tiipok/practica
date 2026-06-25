@@ -8,10 +8,27 @@
 
 namespace storage {
 
+namespace {
+
 static inline const char* col_text(sqlite3_stmt* stmt, int col) {
     auto* txt = sqlite3_column_text(stmt, col);
     return txt ? reinterpret_cast<const char*>(txt) : "";
 }
+
+static std::string csv_quote(const std::string& field) {
+    if (field.find_first_of(",\"\n") == std::string::npos) {
+        return field;
+    }
+    std::string quoted = "\"";
+    for (char c : field) {
+        if (c == '"') quoted += "\"\"";
+        else quoted += c;
+    }
+    quoted += "\"";
+    return quoted;
+}
+
+} // namespace
 
 ResultsStorage::ResultsStorage(const std::string& db_path)
     : db_(nullptr)
@@ -218,11 +235,11 @@ bool ResultsStorage::export_csv(const std::string& csv_path) {
 
     for (const auto& rec : records) {
         csv << rec.id << ","
-            << rec.timestamp << ","
-            << rec.archive_name << ","
+            << csv_quote(rec.timestamp) << ","
+            << csv_quote(rec.archive_name) << ","
             << rec.archive_size_bytes << ","
-            << rec.protection_type << ","
-            << rec.charset_name << ","
+            << csv_quote(rec.protection_type) << ","
+            << csv_quote(rec.charset_name) << ","
             << rec.charset_size << ","
             << rec.password_length << ","
             << rec.total_space_size << ","
@@ -233,11 +250,11 @@ bool ResultsStorage::export_csv(const std::string& csv_path) {
             << rec.cpu_load_percent << ","
             << rec.memory_resident_bytes << ","
             << rec.memory_virtual_bytes << ","
-            << rec.compiler_flags << ","
-            << rec.cpu_model << ","
+            << csv_quote(rec.compiler_flags) << ","
+            << csv_quote(rec.cpu_model) << ","
             << (rec.password_found ? 1 : 0) << ","
-            << rec.found_password << ","
-            << rec.execution_mode << "\n";
+            << csv_quote(rec.found_password) << ","
+            << csv_quote(rec.execution_mode) << "\n";
     }
 
     csv.close();
